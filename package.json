@@ -1,11 +1,16 @@
 {
-  "name": "leaflet-side-by-side",
-  "version": "0.0.0",
-  "description": "一个功能更完善、兼容 leaflet-side-by-side API 的 Leaflet 图层对比控件。",
+  "name": "@zvonimirsun/leaflet-side-by-side",
   "type": "module",
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.33.4",
+  "description": "一个功能更完善、兼容 leaflet-side-by-side API 的 Leaflet 图层对比控件。",
+  "author": "ZvonimirSun",
   "license": "MIT",
   "publishConfig": {
     "access": "public"
+  },
+  "repository": {
+    "url": "https://github.com/ZvonimirSun/leaflet-side-by-side"
   },
   "keywords": [
     "leaflet",
@@ -18,12 +23,17 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
   "peerDependencies": {
     "leaflet": ">=1.0.0"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^9.2.0",
+    "eslint": "^10.8.0",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   }
