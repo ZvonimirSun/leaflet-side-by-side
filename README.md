@@ -1,5 +1,7 @@
 # Leaflet 图层对比控件
 
+[![在 DeepWiki 中查看](https://deepwiki.com/badge.svg)](https://deepwiki.com/ZvonimirSun/leaflet-side-by-side)
+
 一个面向 Leaflet 的图层对比控件。本项目将在保持
 [`leaflet-side-by-side`](https://github.com/digidem/leaflet-side-by-side)
 现有参数、方法和事件兼容的基础上，提供更完整、可靠且易于维护的实现，
@@ -41,9 +43,8 @@
 
 ## 发布说明
 
-本项目计划作为公开 npm 包发布。当前 `package.json` 暂时沿用
-`leaflet-side-by-side` 作为包名；该名称已被原插件占用，正式发布前需确认
-现有包的发布权限，或改用新的包名（例如组织 scope 下的包名）。
+本项目计划以 `@zvonimirsun/leaflet-side-by-side` 作为公开 npm 包发布。
+使用 scope 包名可避免与原 `leaflet-side-by-side` 包冲突。
 
 入口文件、类型声明和 `exports` 配置将在插件构建规范确定后补充，避免当前
 Vite 示例应用的构建产物被误认为可发布的库文件。
@@ -62,6 +63,20 @@ pnpm dev
 ```bash
 pnpm build
 ```
+
+代码检查和自动修复：
+
+```bash
+pnpm lint
+pnpm lint:fix
+pnpm typecheck
+```
+
+## 项目文档
+
+仓库公开并推送到 GitHub 后，可通过
+[DeepWiki](https://deepwiki.com/ZvonimirSun/leaflet-side-by-side)
+浏览代码文档并针对项目提问。
 
 ## 开源许可证
 

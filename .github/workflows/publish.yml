@@ -1,0 +1,37 @@
+name: 发布 npm 包
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  MAIN_BRANCH: main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          cache: true
+          run_install: true
+
+      - name: 代码检查
+        run: pnpm run lint
+
+      - name: 类型检查
+        run: pnpm run typecheck
+
+      - name: 构建
+        run: pnpm run build
+
+      - name: 发布
+        if: github.ref_name == env.MAIN_BRANCH
+        run: pnpm publish --access public
