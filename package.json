@@ -1,0 +1,30 @@
+{
+  "name": "leaflet-side-by-side",
+  "version": "0.0.0",
+  "description": "一个功能更完善、兼容 leaflet-side-by-side API 的 Leaflet 图层对比控件。",
+  "type": "module",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "leaflet",
+    "leaflet-plugin",
+    "side-by-side",
+    "map",
+    "comparison",
+    "control"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "peerDependencies": {
+    "leaflet": ">=1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1"
+  }
+}
