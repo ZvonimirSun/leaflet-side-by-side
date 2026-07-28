@@ -1,14 +1,11 @@
 {
   "name": "@zvonimirsun/leaflet-side-by-side",
   "type": "module",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "packageManager": "pnpm@10.33.4",
   "description": "一个功能更完善、兼容 leaflet-side-by-side API 的 Leaflet 图层对比控件。",
   "author": "ZvonimirSun",
   "license": "MIT",
-  "publishConfig": {
-    "access": "public"
-  },
   "repository": {
     "url": "https://github.com/ZvonimirSun/leaflet-side-by-side"
   },
@@ -20,21 +17,47 @@
     "comparison",
     "control"
   ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "./dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build && tsc -p tsconfig.build.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit",
-    "preview": "vite preview"
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "peerDependencies": {
     "leaflet": ">=1.0.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.2.0",
+    "@types/jsdom": "^28.0.3",
+    "@types/leaflet": "^1.9.21",
     "eslint": "^10.8.0",
+    "jsdom": "^30.0.0",
+    "leaflet": "^1.9.4",
     "typescript": "~6.0.2",
-    "vite": "^8.1.1"
+    "vite": "^8.1.1",
+    "vitest": "^4.1.10"
   }
 }

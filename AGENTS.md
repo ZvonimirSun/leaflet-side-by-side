@@ -12,12 +12,13 @@
 | 任务 | 命令 |
 | --- | --- |
 | 安装依赖 | `pnpm install` |
-| 启动开发服务 | `pnpm dev` |
+| 启动示例 | `pnpm dev` |
 | 生产构建 | `pnpm build` |
-| 预览生产构建 | `pnpm preview` |
 | 代码检查 | `pnpm lint` |
 | 自动修复 lint | `pnpm lint:fix` |
 | 类型检查 | `pnpm typecheck` |
+| 运行测试 | `pnpm test` |
+| 测试监听模式 | `pnpm test:watch` |
 
 ## 技术栈
 
@@ -44,13 +45,19 @@
 - 事件监听必须在控件移除时成对清理，避免内存泄漏和重复响应。
 - DOM 类名应带稳定的插件前缀，避免污染宿主页面样式。
 - CSS 只约束控件自身，不覆盖 Leaflet 或宿主应用的全局样式。
+- 图层裁剪使用 `clip-path: polygon(...)`，不要重新使用已弃用的 CSS `clip` 属性；
+  坐标必须基于 Leaflet 的 layer point，以适配地图平移。
 - 不为简单逻辑引入新依赖；源码直接使用的依赖必须在 `package.json` 中显式声明。
 - 注释用于说明兼容性、浏览器差异或非显而易见的原因，不复述代码行为。
 
 ## API 兼容约束
 
-- 兼容 `L.control.sideBySide(leftLayers, rightLayers, options)`。
-- 兼容 `L.Control.SideBySide` 及原插件公开的实例方法。
+- `sideBySide(leftLayers, rightLayers, options)` 保持原工厂方法的参数语义。
+- `SideBySide` 构造器保持原控件构造参数及公开实例方法。
+- 包使用标准模块导出，不要求写入 `L.control` 或 `L.Control` 命名空间。
+- JavaScript 运行时只导出 `SideBySide` 和 `sideBySide`。
+- 可以通过 `export type` 公开图层输入、选项、控件实例、构造器和事件数据类型；
+  类型导出不得引入额外运行时代码。
 - 参数应接受原插件支持的单图层和图层集合形式。
 - 公开事件的名称、触发时机和事件数据需要通过兼容测试固定。
 - 调整默认值、异常处理或图层裁剪机制前，先记录原插件行为并补充测试。
@@ -68,22 +75,25 @@
   数量和类型提示不正确。
 - 实例类型、选项类型和构造器类型应分别声明。运行时仍由 `L.Control.extend`
   创建，随后只在实现边界将返回值断言为精确构造器类型。
-- 工厂函数 `L.control.sideBySide(...)` 与 `new L.Control.SideBySide(...)` 必须
-  复用同一组参数类型，并通过类型测试验证两种调用方式。
+- 工厂函数 `sideBySide(...)` 与 `new SideBySide(...)` 必须复用同一组参数类型，
+  并通过类型测试验证两种调用方式。
 
 推荐采用以下类型结构：
 
 ```ts
-export interface SideBySideOptions extends L.ControlOptions {
+interface SideBySideOptions extends L.ControlOptions {
   // 插件选项
 }
 
-export interface SideBySideControl extends L.Control {
-  setLeftLayers: (layers: L.Layer | L.Layer[]) => this
-  setRightLayers: (layers: L.Layer | L.Layer[]) => this
-}
+type SideBySideControl = L.Evented
+  & Omit<L.Control<SideBySideOptions>, 'getPosition' | 'setPosition'>
+  & {
+    getPosition: () => number
+    setLeftLayers: (layers: L.Layer | L.Layer[]) => SideBySideControl
+    setRightLayers: (layers: L.Layer | L.Layer[]) => SideBySideControl
+  }
 
-export interface SideBySideConstructor {
+interface SideBySideConstructor {
   new (
     leftLayers: L.Layer | L.Layer[],
     rightLayers: L.Layer | L.Layer[],
@@ -98,11 +108,11 @@ const SideBySide = L.Control.extend({
 
 - 上述 `unknown` 双重断言只能集中在 `extend` 的实现边界，不应扩散到公开方法或业务
   逻辑中。
+- 类型使用者需要直接引用的辅助类型应通过纯类型导出公开，不要增加对应运行时值。
 - 如果需要公开静态成员，应在 `SideBySideConstructor` 中逐项声明真实使用的成员，
   不要为了继承全部静态类型而与 `typeof L.Control` 交叉。
-- Leaflet 模块增强应单独声明 `L.Control.SideBySide` 和
-  `L.control.sideBySide` 的精确签名，并让它们分别引用
-  `SideBySideConstructor` 和 `SideBySideControl`。
+- 不要通过模块增强修改 Leaflet 的 `L.Control` 或 `L.control` 命名空间；构造器
+  和工厂函数从包入口直接导出。
 - 为类型入口增加编译期测试，至少覆盖合法构造、工厂调用、缺少左右图层参数以及错误
   图层类型；带 `@ts-expect-error` 的错误用例必须确实触发类型错误。
 

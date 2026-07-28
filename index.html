@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+      name="description"
+      content="Leaflet Side by Side 多图层卷帘示例"
+    >
+    <title>Leaflet Side by Side 示例</title>
+  </head>
+  <body>
+    <main class="demo">
+      <header class="demo-header">
+        <div>
+          <h1>Leaflet Side by Side</h1>
+          <p>浅色地图与深色地图多图层卷帘</p>
+        </div>
+        <div class="demo-legend" aria-label="卷帘图层说明">
+          <span><i class="demo-swatch demo-swatch-light"></i>左侧：浅色地图与注记</span>
+          <span><i class="demo-swatch demo-swatch-dark"></i>右侧：深色地图与注记</span>
+        </div>
+      </header>
+      <div id="map" aria-label="地图卷帘示例"></div>
+    </main>
+    <script type="module" src="/src/demo.ts"></script>
+  </body>
+</html>
