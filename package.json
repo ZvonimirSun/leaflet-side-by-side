@@ -1,7 +1,7 @@
 {
   "name": "@zvonimirsun/leaflet-side-by-side",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "packageManager": "pnpm@10.33.4",
   "description": "一个功能更完善、兼容 leaflet-side-by-side API 的 Leaflet 图层对比控件。",
   "author": "ZvonimirSun",
