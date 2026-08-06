@@ -1,3 +1,4 @@
+import type { DividerMoveEvent } from '../src'
 import * as L from 'leaflet'
 import { describe, expect, it, vi } from 'vitest'
 import * as packageExports from '../src'
@@ -75,6 +76,31 @@ describe('sideBySide', () => {
     control.setLeftLayers(leftA)
     expect(leftA.getContainer().style.clipPath).toBe('polygon(0px 0px, 400px 0px, 400px 600px, 0px 600px)')
     expect(leftB.getContainer().style.visibility).toBe('hidden')
+  })
+
+  it('可用比例或像素设置并保留卷帘位置', () => {
+    const map = createMap()
+    const [left, right] = addLayers(map, 2)
+    const control = createControl(left, right)
+    const positions: number[] = []
+
+    expect(control.setPositionRatio(0.25)).toBe(control)
+    control.on('dividermove', (event) => {
+      positions.push((event as DividerMoveEvent).x)
+    })
+    control.addTo(map)
+
+    expect(control.getPosition()).toBe(210.5)
+    expect(left.getContainer().style.clipPath).toBe('polygon(0px 0px, 210.5px 0px, 210.5px 600px, 0px 600px)')
+    expect(right.getContainer().style.clipPath).toBe('polygon(210.5px 0px, 800px 0px, 800px 600px, 210.5px 600px)')
+
+    control.setPosition(300)
+    expect(control.getPosition()).toBeCloseTo(300)
+    expect(positions.at(-1)).toBeCloseTo(300)
+
+    control.remove()
+    control.addTo(map)
+    expect(control.getPosition()).toBeCloseTo(300)
   })
 
   it('会完整显示左右两侧共有的图层并隐藏未声明图层', () => {

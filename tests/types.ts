@@ -22,6 +22,8 @@ const fromFactory: SideBySideControl = sideBySide(layers, layer, {
 })
 
 fromConstructor.setLeftLayers(layers)
+fromConstructor.setPositionRatio(0.25)
+fromFactory.setPosition(300)
 fromFactory.setRightLayers(layer)
 
 const onLayerChange = (event: SideBySideLayerEvent) => event.layer

@@ -87,6 +87,11 @@ control.addTo(map)
 
 - `setLeftLayers(layers)`：替换左侧图层，返回当前控件。
 - `setRightLayers(layers)`：替换右侧图层，返回当前控件。
+- `setPosition(position)`：按地图容器内的横向像素位置设置卷帘，需在
+  `addTo(map)` 后调用。位置超出滑块可拖动范围时会收敛到边界；返回当前控件。
+- `setPositionRatio(ratio)`：按 `0` 到 `1` 的归一化比例设置卷帘，例如 `0.25`
+  表示 25%。位置会在控件移除和重新添加后保留，也可以在 `addTo(map)` 前设置；
+  返回当前控件。
 - `getPosition()`：返回分割线在地图容器中的横向像素位置。
 - `addTo(map)`：将控件添加到地图。
 - `remove()`：移除控件并恢复图层样式。

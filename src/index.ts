@@ -21,7 +21,8 @@ interface SideBySideMethods {
   getPosition: () => number
   remove: () => SideBySideControl
   setLeftLayers: (layers: LayerInput) => SideBySideControl
-  setPosition: (position?: L.ControlPosition) => SideBySideControl
+  setPosition: (position?: number | L.ControlPosition) => SideBySideControl
+  setPositionRatio: (ratio: number) => SideBySideControl
   setRightLayers: (layers: LayerInput) => SideBySideControl
 }
 
@@ -67,6 +68,7 @@ type InternalSideBySide = SideBySideControl & {
   _mapWasDragEnabled: boolean
   _mapWasTapEnabled: boolean
   _originalStyles: Map<LayerElement, OriginalStyle>
+  _position: number
   _range: HTMLInputElement
   _refocusOnMap: (event: Event) => void
   _removeEvents: () => void
@@ -76,6 +78,7 @@ type InternalSideBySide = SideBySideControl & {
   _uncancelMapDrag: (event: Event) => void
   _updateClip: () => void
   _updateLayers: () => InternalSideBySide
+  _updatePosition: () => void
 }
 
 const LEFT = 1
@@ -138,6 +141,7 @@ export const SideBySide = L.Control.extend({
     this._activeLeftLayers = new Set()
     this._activeRightLayers = new Set()
     this._originalStyles = new Map()
+    this._position = 0.5
     this._mapWasDragEnabled = false
     this._mapWasTapEnabled = false
     this.setLeftLayers(leftLayers)
@@ -146,13 +150,36 @@ export const SideBySide = L.Control.extend({
   },
 
   getPosition(this: InternalSideBySide): number {
-    const rangeValue = this._range.valueAsNumber
-    const value = Number.isNaN(rangeValue) ? Number(this._range.value) : rangeValue
-    const offset = (0.5 - value) * (2 * this.options.padding! + this.options.thumbSize!)
-    return this._map!.getSize().x * value + offset
+    const offset = (0.5 - this._position) * (2 * this.options.padding! + this.options.thumbSize!)
+    return this._map!.getSize().x * this._position + offset
   },
 
-  setPosition(this: InternalSideBySide): SideBySideControl {
+  setPosition(
+    this: InternalSideBySide,
+    position?: number | L.ControlPosition,
+  ): SideBySideControl {
+    if (typeof position !== 'number')
+      return this
+
+    if (!Number.isFinite(position))
+      throw new RangeError('Divider position must be a finite value')
+    if (!this._map)
+      throw new Error('Control must be added to a map before setting a pixel position')
+
+    const trackSize = this._map.getSize().x - 2 * this.options.padding! - this.options.thumbSize!
+    const start = this.options.padding! + this.options.thumbSize! / 2
+    const ratio = trackSize > 0 ? (position - start) / trackSize : 0.5
+    return this.setPositionRatio(ratio)
+  },
+
+  setPositionRatio(this: InternalSideBySide, ratio: number): SideBySideControl {
+    if (!Number.isFinite(ratio))
+      throw new RangeError('Divider position ratio must be a finite value')
+
+    this._position = Math.min(1, Math.max(0, ratio))
+    if (this._range)
+      this._range.value = String(this._position)
+    this._updateClip()
     return this
   },
 
@@ -167,7 +194,7 @@ export const SideBySide = L.Control.extend({
     this._range.min = '0'
     this._range.max = '1'
     this._range.step = 'any'
-    this._range.value = '0.5'
+    this._range.value = String(this._position)
     this._range.style.paddingLeft = `${this.options.padding}px`
     this._range.style.paddingRight = `${this.options.padding}px`
 
@@ -272,6 +299,12 @@ export const SideBySide = L.Control.extend({
     })
   },
 
+  _updatePosition(this: InternalSideBySide): void {
+    const rangeValue = this._range.valueAsNumber
+    this._position = Number.isNaN(rangeValue) ? Number(this._range.value) : rangeValue
+    this._updateClip()
+  },
+
   _restoreElement(this: InternalSideBySide, element: LayerElement): void {
     const original = this._originalStyles.get(element)
     if (!original)
@@ -313,14 +346,14 @@ export const SideBySide = L.Control.extend({
 
     this._map.on('move', this._updateClip, this)
     this._map.on('layeradd layerremove', this._updateLayers, this)
-    L.DomEvent.on(this._range, getRangeEvent(this._range), this._updateClip, this)
+    L.DomEvent.on(this._range, getRangeEvent(this._range), this._updatePosition, this)
     L.DomEvent.on(this._range, 'touchstart mousedown', this._cancelMapDrag, this)
     L.DomEvent.on(this._range, 'touchend mouseup', this._uncancelMapDrag, this)
   },
 
   _removeEvents(this: InternalSideBySide): void {
     if (this._range) {
-      L.DomEvent.off(this._range, getRangeEvent(this._range), this._updateClip, this)
+      L.DomEvent.off(this._range, getRangeEvent(this._range), this._updatePosition, this)
       L.DomEvent.off(this._range, 'touchstart mousedown', this._cancelMapDrag, this)
       L.DomEvent.off(this._range, 'touchend mouseup', this._uncancelMapDrag, this)
     }
