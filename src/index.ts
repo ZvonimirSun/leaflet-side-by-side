@@ -79,6 +79,7 @@ type InternalSideBySide = SideBySideControl & {
   _updateClip: () => void
   _updateLayers: () => InternalSideBySide
   _updatePosition: () => void
+  _updateRangeLimits: () => void
 }
 
 const LEFT = 1
@@ -150,8 +151,7 @@ export const SideBySide = L.Control.extend({
   },
 
   getPosition(this: InternalSideBySide): number {
-    const offset = (0.5 - this._position) * (2 * this.options.padding! + this.options.thumbSize!)
-    return this._map!.getSize().x * this._position + offset
+    return this._map!.getSize().x * this._position
   },
 
   setPosition(
@@ -166,9 +166,8 @@ export const SideBySide = L.Control.extend({
     if (!this._map)
       throw new Error('Control must be added to a map before setting a pixel position')
 
-    const trackSize = this._map.getSize().x - 2 * this.options.padding! - this.options.thumbSize!
-    const start = this.options.padding! + this.options.thumbSize! / 2
-    const ratio = trackSize > 0 ? (position - start) / trackSize : 0.5
+    const width = this._map.getSize().x
+    const ratio = width > 0 ? position / width : 0.5
     return this.setPositionRatio(ratio)
   },
 
@@ -191,12 +190,11 @@ export const SideBySide = L.Control.extend({
     this._divider = L.DomUtil.create('div', 'leaflet-sbs-divider', this._container)
     this._range = L.DomUtil.create('input', 'leaflet-sbs-range', this._container)
     this._range.type = 'range'
-    this._range.min = '0'
-    this._range.max = '1'
     this._range.step = 'any'
-    this._range.value = String(this._position)
     this._range.style.paddingLeft = `${this.options.padding}px`
     this._range.style.paddingRight = `${this.options.padding}px`
+    this._updateRangeLimits()
+    this._range.value = String(this._position)
 
     this._addEvents()
     this._updateLayers()
@@ -248,6 +246,7 @@ export const SideBySide = L.Control.extend({
     if (!this._map)
       return
 
+    this._updateRangeLimits()
     const nw = this._map.containerPointToLayerPoint([0, 0])
     const se = this._map.containerPointToLayerPoint(this._map.getSize())
     const dividerX = this.getPosition()
@@ -303,6 +302,19 @@ export const SideBySide = L.Control.extend({
     const rangeValue = this._range.valueAsNumber
     this._position = Number.isNaN(rangeValue) ? Number(this._range.value) : rangeValue
     this._updateClip()
+  },
+
+  _updateRangeLimits(this: InternalSideBySide): void {
+    if (!this._map || !this._range)
+      return
+
+    const width = this._map.getSize().x
+    const inset = this.options.padding! + this.options.thumbSize! / 2
+    const minRatio = width > 0
+      ? Math.min(0.5, Math.max(0, inset / width))
+      : 0.5
+    this._range.min = String(minRatio)
+    this._range.max = String(1 - minRatio)
   },
 
   _restoreElement(this: InternalSideBySide, element: LayerElement): void {

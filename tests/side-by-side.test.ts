@@ -78,7 +78,7 @@ describe('sideBySide', () => {
     expect(leftB.getContainer().style.visibility).toBe('hidden')
   })
 
-  it('可用比例或像素设置并保留卷帘位置', () => {
+  it('使用地图容器比例或像素设置并保留卷帘位置', () => {
     const map = createMap()
     const [left, right] = addLayers(map, 2)
     const control = createControl(left, right)
@@ -90,9 +90,9 @@ describe('sideBySide', () => {
     })
     control.addTo(map)
 
-    expect(control.getPosition()).toBe(210.5)
-    expect(left.getContainer().style.clipPath).toBe('polygon(0px 0px, 210.5px 0px, 210.5px 600px, 0px 600px)')
-    expect(right.getContainer().style.clipPath).toBe('polygon(210.5px 0px, 800px 0px, 800px 600px, 210.5px 600px)')
+    expect(control.getPosition()).toBe(200)
+    expect(left.getContainer().style.clipPath).toBe('polygon(0px 0px, 200px 0px, 200px 600px, 0px 600px)')
+    expect(right.getContainer().style.clipPath).toBe('polygon(200px 0px, 800px 0px, 800px 600px, 200px 600px)')
 
     control.setPosition(300)
     expect(control.getPosition()).toBeCloseTo(300)
@@ -101,6 +101,30 @@ describe('sideBySide', () => {
     control.remove()
     control.addTo(map)
     expect(control.getPosition()).toBeCloseTo(300)
+  })
+
+  it('将比例边界映射到地图容器边界', () => {
+    const map = createMap()
+    const [left, right] = addLayers(map, 2)
+    const control = createControl(left, right).addTo(map)
+
+    control.setPositionRatio(0)
+    expect(control.getPosition()).toBe(0)
+
+    control.setPositionRatio(1)
+    expect(control.getPosition()).toBe(800)
+  })
+
+  it('将滑块内边距转换为可拖动的比例边界', () => {
+    const map = createMap()
+    const [left, right] = addLayers(map, 2)
+    sideBySide(left, right, { padding: 20 })
+      .setPositionRatio(0.5)
+      .addTo(map)
+
+    const range = map.getContainer().querySelector<HTMLInputElement>('.leaflet-sbs-range')!
+    expect(range.min).toBe(String((20 + 42 / 2) / 800))
+    expect(range.max).toBe(String(1 - (20 + 42 / 2) / 800))
   })
 
   it('会完整显示左右两侧共有的图层并隐藏未声明图层', () => {

@@ -80,17 +80,18 @@ control.addTo(map)
 
 | 选项 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `thumbSize` | `number` | `42` | 滑块尺寸，用于计算分割位置偏移 |
-| `padding` | `number` | `0` | 滑块左右内边距 |
+| `thumbSize` | `number` | `42` | 滑块尺寸，用于计算可拖动范围 |
+| `padding` | `number` | `0` | 滑块左右内边距，用于限制可拖动范围 |
 
 ### 方法
 
 - `setLeftLayers(layers)`：替换左侧图层，返回当前控件。
 - `setRightLayers(layers)`：替换右侧图层，返回当前控件。
 - `setPosition(position)`：按地图容器内的横向像素位置设置卷帘，需在
-  `addTo(map)` 后调用。位置超出滑块可拖动范围时会收敛到边界；返回当前控件。
-- `setPositionRatio(ratio)`：按 `0` 到 `1` 的归一化比例设置卷帘，例如 `0.25`
-  表示 25%。位置会在控件移除和重新添加后保留，也可以在 `addTo(map)` 前设置；
+  `addTo(map)` 后调用。位置超出地图容器范围时会收敛到边界；返回当前控件。
+- `setPositionRatio(ratio)`：按 `0` 到 `1` 的地图容器宽度比例设置卷帘，例如
+  `0.25` 表示地图容器宽度的 25%，`0` 和 `1` 分别对应容器左右边界。
+  位置会在控件移除和重新添加后保留，也可以在 `addTo(map)` 前设置；
   返回当前控件。
 - `getPosition()`：返回分割线在地图容器中的横向像素位置。
 - `addTo(map)`：将控件添加到地图。
