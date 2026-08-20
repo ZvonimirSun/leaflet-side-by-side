@@ -13,7 +13,7 @@ declare const layer: L.Layer
 declare const layers: L.Layer[]
 
 const input: LayerInput = layers
-const options: SideBySideOptions = { padding: 4 }
+const options: SideBySideOptions = { direction: 'vertical', padding: 4 }
 const constructor: SideBySideConstructor = SideBySide
 const fromConstructor: SideBySideControl = new SideBySide(layer, layers)
 const fromFactory: SideBySideControl = sideBySide(layers, layer, {
@@ -28,6 +28,7 @@ fromFactory.setRightLayers(layer)
 
 const onLayerChange = (event: SideBySideLayerEvent) => event.layer
 const onDividerMove = (event: DividerMoveEvent) => event.x
+const onVerticalDividerMove = (event: DividerMoveEvent) => event.y
 
 // @ts-expect-error 左右图层参数都是必需的
 const missingRightLayers = new SideBySide(layer)
@@ -35,10 +36,15 @@ const missingRightLayers = new SideBySide(layer)
 // @ts-expect-error 只接受 Leaflet 图层或图层数组
 const invalidLeftLayers = sideBySide('left', layer)
 
+// @ts-expect-error 只接受横向或纵向
+const invalidDirection = sideBySide(layer, layer, { direction: 'diagonal' })
+
 void missingRightLayers
 void invalidLeftLayers
+void invalidDirection
 void input
 void options
 void constructor
 void onLayerChange
 void onDividerMove
+void onVerticalDividerMove

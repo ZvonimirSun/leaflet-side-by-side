@@ -33,5 +33,5 @@ const rightLayers = [darkMap, darkLabels]
 for (const layer of [...leftLayers, ...rightLayers])
   layer.addTo(map)
 
-sideBySide(leftLayers, rightLayers).addTo(map)
+sideBySide(leftLayers, rightLayers, { direction: 'vertical' }).addTo(map)
 L.control.scale({ imperial: false }).addTo(map)

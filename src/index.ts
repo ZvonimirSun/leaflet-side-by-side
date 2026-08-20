@@ -2,14 +2,17 @@ import * as L from 'leaflet'
 import './style.css'
 
 export type LayerInput = L.Layer | readonly L.Layer[] | undefined
+export type SideBySideDirection = 'horizontal' | 'vertical'
 
 export interface SideBySideOptions extends L.ControlOptions {
+  direction?: SideBySideDirection
   padding?: number
   thumbSize?: number
 }
 
 export interface DividerMoveEvent extends L.LeafletEvent {
   x: number
+  y?: number
 }
 
 export interface SideBySideLayerEvent extends L.LeafletEvent {
@@ -85,6 +88,15 @@ type InternalSideBySide = SideBySideControl & {
 const LEFT = 1
 const RIGHT = 2
 
+function isVertical(control: InternalSideBySide): boolean {
+  return control.options.direction === 'vertical'
+}
+
+function getAxisSize(control: InternalSideBySide): number {
+  const size = control._map!.getSize()
+  return isVertical(control) ? size.y : size.x
+}
+
 function asArray(layers: LayerInput): L.Layer[] {
   if (layers === undefined)
     return []
@@ -124,6 +136,7 @@ function fireLayerChanges(
 
 export const SideBySide = L.Control.extend({
   options: {
+    direction: 'horizontal',
     padding: 0,
     thumbSize: 42,
   },
@@ -151,7 +164,7 @@ export const SideBySide = L.Control.extend({
   },
 
   getPosition(this: InternalSideBySide): number {
-    return this._map!.getSize().x * this._position
+    return getAxisSize(this) * this._position
   },
 
   setPosition(
@@ -166,8 +179,8 @@ export const SideBySide = L.Control.extend({
     if (!this._map)
       throw new Error('Control must be added to a map before setting a pixel position')
 
-    const width = this._map.getSize().x
-    const ratio = width > 0 ? position / width : 0.5
+    const axisSize = getAxisSize(this)
+    const ratio = axisSize > 0 ? position / axisSize : 0.5
     return this.setPositionRatio(ratio)
   },
 
@@ -186,11 +199,13 @@ export const SideBySide = L.Control.extend({
     this.remove()
     this._map = map
 
-    this._container = L.DomUtil.create('div', 'leaflet-sbs', map._controlContainer)
+    const direction = isVertical(this) ? 'vertical' : 'horizontal'
+    this._container = L.DomUtil.create('div', `leaflet-sbs leaflet-sbs-${direction}`, map._controlContainer)
     this._divider = L.DomUtil.create('div', 'leaflet-sbs-divider', this._container)
     this._range = L.DomUtil.create('input', 'leaflet-sbs-range', this._container)
     this._range.type = 'range'
     this._range.step = 'any'
+    this._range.setAttribute('aria-orientation', direction)
     this._range.style.paddingLeft = `${this.options.padding}px`
     this._range.style.paddingRight = `${this.options.padding}px`
     this._updateRangeLimits()
@@ -249,14 +264,25 @@ export const SideBySide = L.Control.extend({
     this._updateRangeLimits()
     const nw = this._map.containerPointToLayerPoint([0, 0])
     const se = this._map.containerPointToLayerPoint(this._map.getSize())
-    const dividerX = this.getPosition()
-    const clipX = nw.x + dividerX
-    const clipLeft = `polygon(${nw.x}px ${nw.y}px, ${clipX}px ${nw.y}px, ${clipX}px ${se.y}px, ${nw.x}px ${se.y}px)`
-    const clipRight = `polygon(${clipX}px ${nw.y}px, ${se.x}px ${nw.y}px, ${se.x}px ${se.y}px, ${clipX}px ${se.y}px)`
+    const dividerPosition = this.getPosition()
+    const vertical = isVertical(this)
+    const clipPosition = vertical ? nw.y + dividerPosition : nw.x + dividerPosition
+    const clipLeft = vertical
+      ? `polygon(${nw.x}px ${nw.y}px, ${se.x}px ${nw.y}px, ${se.x}px ${clipPosition}px, ${nw.x}px ${clipPosition}px)`
+      : `polygon(${nw.x}px ${nw.y}px, ${clipPosition}px ${nw.y}px, ${clipPosition}px ${se.y}px, ${nw.x}px ${se.y}px)`
+    const clipRight = vertical
+      ? `polygon(${nw.x}px ${clipPosition}px, ${se.x}px ${clipPosition}px, ${se.x}px ${se.y}px, ${nw.x}px ${se.y}px)`
+      : `polygon(${clipPosition}px ${nw.y}px, ${se.x}px ${nw.y}px, ${se.x}px ${se.y}px, ${clipPosition}px ${se.y}px)`
     const currentElements = new Map<LayerElement, number>()
 
-    this._divider.style.left = `${dividerX}px`
-    this.fire('dividermove', { x: dividerX })
+    if (vertical) {
+      this._divider.style.top = `${dividerPosition}px`
+      this.fire('dividermove', { x: dividerPosition, y: dividerPosition })
+    }
+    else {
+      this._divider.style.left = `${dividerPosition}px`
+      this.fire('dividermove', { x: dividerPosition })
+    }
 
     this._map.eachLayer((layer) => {
       const element = getLayerElement(layer)
@@ -308,10 +334,12 @@ export const SideBySide = L.Control.extend({
     if (!this._map || !this._range)
       return
 
-    const width = this._map.getSize().x
+    const axisSize = getAxisSize(this)
+    if (isVertical(this))
+      this._range.style.width = `${axisSize}px`
     const inset = this.options.padding! + this.options.thumbSize! / 2
-    const minRatio = width > 0
-      ? Math.min(0.5, Math.max(0, inset / width))
+    const minRatio = axisSize > 0
+      ? Math.min(0.5, Math.max(0, inset / axisSize))
       : 0.5
     this._range.min = String(minRatio)
     this._range.max = String(1 - minRatio)
@@ -356,7 +384,7 @@ export const SideBySide = L.Control.extend({
     if (!this._map || !this._range)
       return
 
-    this._map.on('move', this._updateClip, this)
+    this._map.on('move resize', this._updateClip, this)
     this._map.on('layeradd layerremove', this._updateLayers, this)
     L.DomEvent.on(this._range, getRangeEvent(this._range), this._updatePosition, this)
     L.DomEvent.on(this._range, 'touchstart mousedown', this._cancelMapDrag, this)
@@ -371,7 +399,7 @@ export const SideBySide = L.Control.extend({
     }
     if (this._map) {
       this._map.off('layeradd layerremove', this._updateLayers, this)
-      this._map.off('move', this._updateClip, this)
+      this._map.off('move resize', this._updateClip, this)
     }
   },
 }) as unknown as SideBySideConstructor

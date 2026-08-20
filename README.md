@@ -44,6 +44,7 @@ leftB.addTo(map)
 right.addTo(map)
 
 const control = sideBySide([leftA, leftB], right, {
+  direction: 'horizontal',
   padding: 0,
   thumbSize: 42,
 }).addTo(map)
@@ -57,18 +58,19 @@ control.addTo(map)
 ```
 
 左右参数都接受单个 `L.Layer`、图层数组或 `undefined`。单图层会在内部归一化
-为数组，调用方传入的数组不会被修改。
+为数组，调用方传入的数组不会被修改。设置 `direction: 'vertical'` 后，左侧参数
+对应分割线上方，右侧参数对应分割线下方，其余方法、事件和图层处理规则不变。
 
 ## 图层处理规则
 
 控件会根据地图中当前存在的图层计算显示范围：
 
-| 图层归属 | 显示方式 |
-| --- | --- |
-| 仅在左侧列表 | 只显示分割线左侧 |
-| 仅在右侧列表 | 只显示分割线右侧 |
-| 同时在左右列表 | 完整显示，不进行裁剪 |
-| 两侧列表均未包含 | 完全裁剪并隐藏 |
+| 图层归属 | 横向显示方式 | 纵向显示方式 |
+| --- | --- | --- |
+| 仅在左侧列表 | 只显示分割线左侧 | 只显示分割线上方 |
+| 仅在右侧列表 | 只显示分割线右侧 | 只显示分割线下方 |
+| 同时在左右列表 | 完整显示，不进行裁剪 | 完整显示，不进行裁剪 |
+| 两侧列表均未包含 | 完全裁剪并隐藏 | 完全裁剪并隐藏 |
 
 只有已经添加到地图、能通过 `map.hasLayer(layer)` 检查的图层才会参与对应侧的
 裁剪。地图动态添加或移除图层时，控件会自动重新计算。控件移除后会恢复图层
@@ -80,20 +82,22 @@ control.addTo(map)
 
 | 选项 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
+| `direction` | `'horizontal' \| 'vertical'` | `'horizontal'` | 卷帘方向，纵向时左、右图层分别显示在上、下两侧 |
 | `thumbSize` | `number` | `42` | 滑块尺寸，用于计算可拖动范围 |
-| `padding` | `number` | `0` | 滑块左右内边距，用于限制可拖动范围 |
+| `padding` | `number` | `0` | 滑块沿卷帘方向的两端内边距，用于限制可拖动范围 |
 
 ### 方法
 
 - `setLeftLayers(layers)`：替换左侧图层，返回当前控件。
 - `setRightLayers(layers)`：替换右侧图层，返回当前控件。
-- `setPosition(position)`：按地图容器内的横向像素位置设置卷帘，需在
+- `setPosition(position)`：按地图容器内当前卷帘方向的像素位置设置卷帘，需在
   `addTo(map)` 后调用。位置超出地图容器范围时会收敛到边界；返回当前控件。
-- `setPositionRatio(ratio)`：按 `0` 到 `1` 的地图容器宽度比例设置卷帘，例如
-  `0.25` 表示地图容器宽度的 25%，`0` 和 `1` 分别对应容器左右边界。
+- `setPositionRatio(ratio)`：按 `0` 到 `1` 的地图容器轴向比例设置卷帘，例如
+  `0.25` 表示当前方向尺寸的 25%。横向的 `0`、`1` 对应左右边界，纵向对应
+  上下边界。
   位置会在控件移除和重新添加后保留，也可以在 `addTo(map)` 前设置；
   返回当前控件。
-- `getPosition()`：返回分割线在地图容器中的横向像素位置。
+- `getPosition()`：返回分割线在地图容器当前卷帘方向上的像素位置。
 - `addTo(map)`：将控件添加到地图。
 - `remove()`：移除控件并恢复图层样式。
 
@@ -105,7 +109,7 @@ control.addTo(map)
 | `leftlayerremove` | `{ layer }` | 左侧活动图层移除 |
 | `rightlayeradd` | `{ layer }` | 右侧活动图层增加 |
 | `rightlayerremove` | `{ layer }` | 右侧活动图层移除 |
-| `dividermove` | `{ x }` | 分割位置更新，`x` 为容器内像素坐标 |
+| `dividermove` | `{ x, y? }` | 分割位置更新；`x` 始终为当前轴向像素位置，纵向时同时提供同值的 `y` |
 
 当一侧包含多个活动图层时，图层增删事件会针对每个变化的图层分别触发。
 
@@ -114,6 +118,7 @@ control.addTo(map)
 包入口提供以下纯类型导出，不会增加运行时代码：
 
 - `LayerInput`
+- `SideBySideDirection`
 - `SideBySideOptions`
 - `SideBySideControl`
 - `SideBySideConstructor`

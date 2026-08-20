@@ -1,11 +1,7 @@
 .leaflet-sbs-range {
   position: absolute;
-  top: 50%;
-  left: 0;
   z-index: 999;
   display: inline-block !important;
-  width: 100%;
-  min-width: 100px;
   height: 0;
   padding: 0;
   margin: 0;
@@ -16,16 +12,42 @@
   border: 0;
 }
 
+.leaflet-sbs-horizontal .leaflet-sbs-range {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  min-width: 100px;
+}
+
+.leaflet-sbs-vertical .leaflet-sbs-range {
+  top: 50%;
+  left: 50%;
+  min-width: 100px;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center;
+}
+
 .leaflet-sbs-divider {
   position: absolute;
+  z-index: 999;
+  pointer-events: none;
+  background-color: #fff;
+}
+
+.leaflet-sbs-horizontal .leaflet-sbs-divider {
   top: 0;
   bottom: 0;
   left: 50%;
-  z-index: 999;
   width: 4px;
   margin-left: -2px;
-  pointer-events: none;
-  background-color: #fff;
+}
+
+.leaflet-sbs-vertical .leaflet-sbs-divider {
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 4px;
+  margin-top: -2px;
 }
 
 .leaflet-sbs-range::-moz-range-track {
@@ -64,6 +86,14 @@
   border: 1px solid #ddd;
   border-radius: 50%;
   box-shadow: 0 1px 4px rgb(0 0 0 / 30%);
+}
+
+.leaflet-sbs-vertical .leaflet-sbs-range::-webkit-slider-thumb {
+  cursor: ns-resize;
+}
+
+.leaflet-sbs-vertical .leaflet-sbs-range::-moz-range-thumb {
+  cursor: ns-resize;
 }
 
 .leaflet-sbs-range:disabled,
