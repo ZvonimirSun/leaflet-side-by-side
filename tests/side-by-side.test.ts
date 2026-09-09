@@ -186,6 +186,46 @@ describe('sideBySide', () => {
     expect(unassigned.getContainer().style.visibility).toBe('hidden')
   })
 
+  it('可关闭未分配图层的自动隐藏', () => {
+    const map = createMap()
+    const [left, right, unassigned] = addLayers(map, 3)
+    unassigned.getContainer().style.clipPath = 'inset(2px)'
+    unassigned.getContainer().style.visibility = 'visible'
+
+    sideBySide(left, right, { hideOtherLayers: false }).addTo(map)
+
+    expect(unassigned.getContainer().style.clipPath).toBe('inset(2px)')
+    expect(unassigned.getContainer().style.visibility).toBe('visible')
+  })
+
+  it('默认排除未主动传入的 FeatureGroup 成员', () => {
+    const map = createMap()
+    const [left, right, grouped] = addLayers(map, 3)
+    const group = L.featureGroup([L.featureGroup([grouped])]).addTo(map)
+
+    const defaultControl = sideBySide(left, right).addTo(map)
+
+    expect(grouped.getContainer().style.clipPath).toBe('')
+    expect(grouped.getContainer().style.visibility).toBe('')
+    defaultControl.remove()
+
+    const includedControl = sideBySide(left, right, { excludeFeatureGroup: false }).addTo(map)
+    expect(grouped.getContainer().style.clipPath).toBe('polygon(0px 0px, 0px 0px, 0px 0px, 0px 0px)')
+    expect(grouped.getContainer().style.visibility).toBe('hidden')
+    includedControl.remove()
+
+    const childControl = sideBySide(grouped, right).addTo(map)
+    expect(grouped.getContainer().style.clipPath).toContain('polygon')
+    expect(grouped.getContainer().style.visibility).toBe('')
+    childControl.remove()
+
+    const groupControl = sideBySide(group, right).addTo(map)
+    expect(grouped.getContainer().style.clipPath).toContain('polygon')
+    expect(grouped.getContainer().style.visibility).toBe('')
+    groupControl.remove()
+    group.remove()
+  })
+
   it('会为每个活动图层触发兼容的增删事件', () => {
     const map = createMap()
     const [leftA, leftB, right] = addLayers(map, 3)

@@ -6,6 +6,8 @@ export type SideBySideDirection = 'horizontal' | 'vertical'
 
 export interface SideBySideOptions extends L.ControlOptions {
   direction?: SideBySideDirection
+  excludeFeatureGroup?: boolean
+  hideOtherLayers?: boolean
   padding?: number
   thumbSize?: number
 }
@@ -97,6 +99,44 @@ function getAxisSize(control: InternalSideBySide): number {
   return isVertical(control) ? size.y : size.x
 }
 
+function getFeatureGroupLayers(map: SideBySideMap): Set<L.Layer> {
+  const featureGroupLayers = new Set<L.Layer>()
+  const visited = new Set<L.Layer>()
+
+  const visit = (layer: L.Layer): void => {
+    if (visited.has(layer))
+      return
+    visited.add(layer)
+
+    if (!(layer instanceof L.FeatureGroup))
+      return
+
+    layer.eachLayer((child) => {
+      featureGroupLayers.add(child)
+      visit(child)
+    })
+  }
+
+  map.eachLayer(visit)
+  return featureGroupLayers
+}
+
+function getActiveLayers(layers: L.Layer[], map: SideBySideMap): Set<L.Layer> {
+  const activeLayers = new Set<L.Layer>()
+
+  const visit = (layer: L.Layer): void => {
+    if (!map.hasLayer(layer) || activeLayers.has(layer))
+      return
+
+    activeLayers.add(layer)
+    if (layer instanceof L.FeatureGroup)
+      layer.eachLayer(visit)
+  }
+
+  layers.forEach(visit)
+  return activeLayers
+}
+
 function asArray(layers: LayerInput): L.Layer[] {
   if (layers === undefined)
     return []
@@ -137,6 +177,8 @@ function fireLayerChanges(
 export const SideBySide = L.Control.extend({
   options: {
     direction: 'horizontal',
+    excludeFeatureGroup: true,
+    hideOtherLayers: true,
     padding: 0,
     thumbSize: 42,
   },
@@ -245,8 +287,8 @@ export const SideBySide = L.Control.extend({
     if (!this._map)
       return this
 
-    const nextLeft = new Set(this._leftLayers.filter(layer => this._map!.hasLayer(layer)))
-    const nextRight = new Set(this._rightLayers.filter(layer => this._map!.hasLayer(layer)))
+    const nextLeft = getActiveLayers(this._leftLayers, this._map)
+    const nextRight = getActiveLayers(this._rightLayers, this._map)
 
     fireLayerChanges(this, this._activeLeftLayers, nextLeft, 'leftlayeradd', 'leftlayerremove')
     fireLayerChanges(this, this._activeRightLayers, nextRight, 'rightlayeradd', 'rightlayerremove')
@@ -273,7 +315,10 @@ export const SideBySide = L.Control.extend({
     const clipRight = vertical
       ? `polygon(${nw.x}px ${clipPosition}px, ${se.x}px ${clipPosition}px, ${se.x}px ${se.y}px, ${nw.x}px ${se.y}px)`
       : `polygon(${clipPosition}px ${nw.y}px, ${se.x}px ${nw.y}px, ${se.x}px ${se.y}px, ${clipPosition}px ${se.y}px)`
-    const currentElements = new Map<LayerElement, number>()
+    const currentElements = new Map<LayerElement, { isFeatureGroupLayer: boolean, role: number }>()
+    const featureGroupLayers = this.options.excludeFeatureGroup
+      ? getFeatureGroupLayers(this._map)
+      : undefined
 
     if (vertical) {
       this._divider.style.top = `${dividerPosition}px`
@@ -292,7 +337,11 @@ export const SideBySide = L.Control.extend({
       const role
         = (this._activeLeftLayers.has(layer) ? LEFT : 0)
           | (this._activeRightLayers.has(layer) ? RIGHT : 0)
-      currentElements.set(element, (currentElements.get(element) ?? 0) | role)
+      currentElements.set(element, {
+        isFeatureGroupLayer: (currentElements.get(element)?.isFeatureGroupLayer ?? false)
+          || Boolean(featureGroupLayers?.has(layer)),
+        role: (currentElements.get(element)?.role ?? 0) | role,
+      })
     })
 
     this._originalStyles.forEach((_style, element) => {
@@ -302,7 +351,7 @@ export const SideBySide = L.Control.extend({
       }
     })
 
-    currentElements.forEach((role, element) => {
+    currentElements.forEach(({ isFeatureGroupLayer, role }, element) => {
       if (!this._originalStyles.has(element)) {
         this._originalStyles.set(element, {
           clipPath: element.style.clipPath,
@@ -311,16 +360,32 @@ export const SideBySide = L.Control.extend({
       }
 
       const original = this._originalStyles.get(element)!
-      element.style.visibility = role === 0 ? 'hidden' : original.visibility
-
-      if (role === LEFT)
-        element.style.clipPath = clipLeft
-      else if (role === RIGHT)
-        element.style.clipPath = clipRight
-      else if (role === (LEFT | RIGHT))
+      const excludedFromHiding = role === 0 && isFeatureGroupLayer
+      if (role === 0 && this.options.hideOtherLayers && !excludedFromHiding) {
+        element.style.visibility = 'hidden'
+      }
+      else if (role === 0) {
         element.style.clipPath = original.clipPath
-      else
-        element.style.clipPath = 'polygon(0px 0px, 0px 0px, 0px 0px, 0px 0px)'
+        element.style.visibility = original.visibility
+      }
+      else {
+        element.style.visibility = original.visibility
+      }
+
+      if (role === LEFT) {
+        element.style.clipPath = clipLeft
+      }
+      else if (role === RIGHT) {
+        element.style.clipPath = clipRight
+      }
+      else if (role === (LEFT | RIGHT)) {
+        element.style.clipPath = original.clipPath
+      }
+      else {
+        element.style.clipPath = role === 0 && this.options.hideOtherLayers && !excludedFromHiding
+          ? 'polygon(0px 0px, 0px 0px, 0px 0px, 0px 0px)'
+          : original.clipPath
+      }
     })
   },
 

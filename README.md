@@ -45,6 +45,8 @@ right.addTo(map)
 
 const control = sideBySide([leftA, leftB], right, {
   direction: 'horizontal',
+  hideOtherLayers: true,
+  excludeFeatureGroup: true,
   padding: 0,
   thumbSize: 42,
 }).addTo(map)
@@ -75,6 +77,9 @@ control.addTo(map)
 只有已经添加到地图、能通过 `map.hasLayer(layer)` 检查的图层才会参与对应侧的
 裁剪。地图动态添加或移除图层时，控件会自动重新计算。控件移除后会恢复图层
 元素原有的 `clip-path` 和 `visibility` 样式。
+设置 `hideOtherLayers: false` 时，未分配图层保留原样。默认会排除未主动传入
+左右数组的 FeatureGroup 成员；设置 `excludeFeatureGroup: false` 可让这些成员继续按
+其他图层规则处理。直接传入左右数组的图层不受排除规则影响。
 
 ## API
 
@@ -83,6 +88,8 @@ control.addTo(map)
 | 选项 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `direction` | `'horizontal' \| 'vertical'` | `'horizontal'` | 卷帘方向，纵向时左、右图层分别显示在上、下两侧 |
+| `hideOtherLayers` | `boolean` | `true` | 是否隐藏未出现在左右图层数组中的其他图层 |
+| `excludeFeatureGroup` | `boolean` | `true` | 是否跳过未主动传入左右数组的 FeatureGroup 成员 |
 | `thumbSize` | `number` | `42` | 滑块尺寸，用于计算可拖动范围 |
 | `padding` | `number` | `0` | 滑块沿卷帘方向的两端内边距，用于限制可拖动范围 |
 
