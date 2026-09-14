@@ -78,6 +78,49 @@ describe('sideBySide', () => {
     expect(leftB.getContainer().style.visibility).toBe('hidden')
   })
 
+  it('会按 leaflet-gl-layer 容器坐标裁剪 Mapbox 图层', () => {
+    const map = createMap()
+    const [left, right] = addLayers(map, 2)
+    left.getContainer().classList.add('leaflet-gl-layer')
+    right.getContainer().classList.add('leaflet-gl-layer')
+
+    vi.spyOn(map.getContainer(), 'getBoundingClientRect').mockReturnValue({
+      bottom: 650,
+      height: 600,
+      left: 150,
+      right: 950,
+      top: 50,
+      width: 800,
+      x: 150,
+      y: 50,
+    } as DOMRect)
+    vi.spyOn(left.getContainer(), 'getBoundingClientRect').mockReturnValue({
+      bottom: 720,
+      height: 700,
+      left: 100,
+      right: 1100,
+      top: 20,
+      width: 1000,
+      x: 100,
+      y: 20,
+    } as DOMRect)
+    vi.spyOn(right.getContainer(), 'getBoundingClientRect').mockReturnValue({
+      bottom: 720,
+      height: 700,
+      left: 100,
+      right: 1100,
+      top: 20,
+      width: 1000,
+      x: 100,
+      y: 20,
+    } as DOMRect)
+
+    sideBySide(left, right).addTo(map)
+
+    expect(left.getContainer().style.clipPath).toBe('polygon(50px 30px, 450px 30px, 450px 630px, 50px 630px)')
+    expect(right.getContainer().style.clipPath).toBe('polygon(450px 30px, 850px 30px, 850px 630px, 450px 630px)')
+  })
+
   it('使用地图容器比例或像素设置并保留卷帘位置', () => {
     const map = createMap()
     const [left, right] = addLayers(map, 2)

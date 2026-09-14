@@ -157,6 +157,38 @@ function getLayerElement(layer: L.Layer): LayerElement | undefined {
   return candidate.getContainer?.() ?? candidate.getElement?.() ?? undefined
 }
 
+function isMapboxGLLeafletElement(element: LayerElement): boolean {
+  return element.classList.contains('leaflet-gl-layer')
+}
+
+function getMapboxGLLeafletClip(
+  map: SideBySideMap,
+  element: LayerElement,
+  dividerPosition: number,
+  vertical: boolean,
+): { left: string, right: string } | undefined {
+  const mapRect = map.getContainer().getBoundingClientRect()
+  const elementRect = element.getBoundingClientRect()
+  if (!elementRect.width || !elementRect.height)
+    return undefined
+
+  const nwX = mapRect.left - elementRect.left
+  const nwY = mapRect.top - elementRect.top
+  const seX = mapRect.right - elementRect.left
+  const seY = mapRect.bottom - elementRect.top
+  const clipPosition = (vertical ? nwY : nwX) + dividerPosition
+
+  return vertical
+    ? {
+        left: `polygon(${nwX}px ${nwY}px, ${seX}px ${nwY}px, ${seX}px ${clipPosition}px, ${nwX}px ${clipPosition}px)`,
+        right: `polygon(${nwX}px ${clipPosition}px, ${seX}px ${clipPosition}px, ${seX}px ${seY}px, ${nwX}px ${seY}px)`,
+      }
+    : {
+        left: `polygon(${nwX}px ${nwY}px, ${clipPosition}px ${nwY}px, ${clipPosition}px ${seY}px, ${nwX}px ${seY}px)`,
+        right: `polygon(${clipPosition}px ${nwY}px, ${seX}px ${nwY}px, ${seX}px ${seY}px, ${clipPosition}px ${seY}px)`,
+      }
+}
+
 function fireLayerChanges(
   control: InternalSideBySide,
   previous: Set<L.Layer>,
@@ -372,11 +404,15 @@ export const SideBySide = L.Control.extend({
         element.style.visibility = original.visibility
       }
 
+      const mapboxClip = isMapboxGLLeafletElement(element)
+        ? getMapboxGLLeafletClip(this._map!, element, dividerPosition, vertical)
+        : undefined
+
       if (role === LEFT) {
-        element.style.clipPath = clipLeft
+        element.style.clipPath = mapboxClip?.left ?? clipLeft
       }
       else if (role === RIGHT) {
-        element.style.clipPath = clipRight
+        element.style.clipPath = mapboxClip?.right ?? clipRight
       }
       else if (role === (LEFT | RIGHT)) {
         element.style.clipPath = original.clipPath
